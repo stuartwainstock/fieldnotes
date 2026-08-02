@@ -1,5 +1,8 @@
 import { defineType, defineField } from 'sanity'
 import { TagIcon } from '@sanity/icons'
+import { DEFAULT_ORG_CONFIG } from '../../config/org'
+
+const tagLabels = DEFAULT_ORG_CONFIG.taxonomy.tagCategoryLabels
 
 export const tagDocument = defineType({
   name: 'tag',
@@ -27,13 +30,13 @@ export const tagDocument = defineType({
       description: 'Groups tags in the UI and helps the agent understand tag intent',
       options: {
         list: [
-          { title: 'Discipline — area of design practice', value: 'discipline' },
-          { title: 'Activity — a type of work or exercise', value: 'activity' },
-          { title: 'Mindset — a way of thinking or orienting', value: 'mindset' },
-          { title: 'Stakeholder — who this involves', value: 'stakeholder' },
-          { title: 'Quality — a standard or attribute of good work', value: 'quality' },
-          { title: 'Tool — a specific tool or medium', value: 'tool' },
-          { title: 'Other', value: 'other' },
+          { title: tagLabels.discipline, value: 'discipline' },
+          { title: tagLabels.activity, value: 'activity' },
+          { title: tagLabels.mindset, value: 'mindset' },
+          { title: tagLabels.stakeholder, value: 'stakeholder' },
+          { title: tagLabels.quality, value: 'quality' },
+          { title: tagLabels.tool, value: 'tool' },
+          { title: tagLabels.other, value: 'other' },
         ],
       },
     }),

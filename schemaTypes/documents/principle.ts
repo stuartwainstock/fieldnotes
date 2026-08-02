@@ -1,5 +1,6 @@
 import { defineType, defineField } from 'sanity'
 import { BlockquoteIcon } from '@sanity/icons'
+import { DEFAULT_ORG_CONFIG } from '../../config/org'
 import {
   confidenceField,
   phaseField,
@@ -16,13 +17,13 @@ export const principleDocument = defineType({
   title: 'Principle',
   type: 'document',
   icon: BlockquoteIcon,
-  description: 'A core belief, one-liner, or opinionated stance on how good design work gets done.',
+  description: DEFAULT_ORG_CONFIG.principleTypeDescription,
   fields: [
     defineField({
       name: 'statement',
       title: 'The principle',
       type: 'string',
-      description: 'The one-liner itself. Should be quotable and memorable — the kind of thing you\'d say in a critique.',
+      description: DEFAULT_ORG_CONFIG.principleStatementDescription,
       validation: (Rule) => Rule.required().max(200),
     }),
     defineField({

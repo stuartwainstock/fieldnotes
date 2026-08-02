@@ -1,16 +1,17 @@
 import { defineType, defineField } from 'sanity'
 import { ProjectsIcon } from '@sanity/icons'
+import { DEFAULT_ORG_CONFIG } from '../../config/org'
 
 export const phaseDocument = defineType({
   name: 'phase',
-  title: 'Phase',
+  title: DEFAULT_ORG_CONFIG.taxonomy.domainTypeTitle,
   type: 'document',
   icon: ProjectsIcon,
-  description: 'A stage in the design process. Keep these high-level — they\'re the primary lens for organising all knowledge.',
+  description: DEFAULT_ORG_CONFIG.taxonomy.domainTypeDescription,
   fields: [
     defineField({
       name: 'name',
-      title: 'Phase name',
+      title: `${DEFAULT_ORG_CONFIG.taxonomy.domainTypeTitle} name`,
       type: 'string',
       validation: (Rule) => Rule.required(),
     }),
@@ -26,7 +27,7 @@ export const phaseDocument = defineType({
       title: 'Description',
       type: 'text',
       rows: 3,
-      description: 'What is the goal of this phase? What questions is the team trying to answer?',
+      description: 'What is the goal of this stage? What questions is the team trying to answer?',
     }),
     defineField({
       name: 'order',

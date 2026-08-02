@@ -1,13 +1,158 @@
 import {defineType, defineField, defineArrayMember} from 'sanity'
 import {HomeIcon} from '@sanity/icons'
+import {DEFAULT_ORG_CONFIG, KNOWLEDGE_TYPE_REGISTRY} from '../../config/org'
 
 export const siteContentDocument = defineType({
   name: 'siteContent',
   title: 'Site content',
   type: 'document',
   icon: HomeIcon,
-  description: 'Editable content for the landing page and chat page.',
+  description:
+    'Org config + editable site copy. The org group isolates white-label settings (agent framing, branding, enabled types, taxonomy labels) from engine code.',
   fields: [
+    // ── Org config (white-label) ──
+    defineField({
+      name: 'org',
+      title: 'Org config',
+      type: 'object',
+      description:
+        'What makes this deployment different from another org. Prefer editing here over changing engine code. Blank fields fall back to code defaults in config/org.ts.',
+      options: {collapsible: true, collapsed: false},
+      fields: [
+        defineField({
+          name: 'displayName',
+          title: 'Display name',
+          type: 'string',
+          description: 'Short org / product name used in prompts and UI framing.',
+          initialValue: DEFAULT_ORG_CONFIG.displayName,
+        }),
+        defineField({
+          name: 'agentRoleLine',
+          title: 'Agent role line',
+          type: 'text',
+          rows: 3,
+          description:
+            'Opening of the chat system prompt — who the agent is and who it serves. Keep it natural, not a template with blanks.',
+          initialValue: DEFAULT_ORG_CONFIG.agentRoleLine,
+        }),
+        defineField({
+          name: 'northStarLine',
+          title: 'North-star line',
+          type: 'text',
+          rows: 2,
+          description:
+            'The conviction the agent embodies. Example: "If the design lead would say it in a critique, you should be able to say it too."',
+          initialValue: DEFAULT_ORG_CONFIG.northStarLine,
+        }),
+        defineField({
+          name: 'exportRoleLine',
+          title: 'Export role line',
+          type: 'string',
+          description: 'Opening line for the slide-export structuring prompt.',
+          initialValue: DEFAULT_ORG_CONFIG.exportRoleLine,
+        }),
+        defineField({
+          name: 'enabledKnowledgeTypes',
+          title: 'Enabled knowledge types',
+          type: 'array',
+          of: [{type: 'string'}],
+          description:
+            'Which knowledge document types this org uses. Leave empty to use all engine types. Values must match the engine registry (framework, process, insight, principle, externalResource — plus future types).',
+          options: {
+            list: KNOWLEDGE_TYPE_REGISTRY.map((value) => ({title: value, value})),
+          },
+          initialValue: [...DEFAULT_ORG_CONFIG.enabledKnowledgeTypes],
+        }),
+        defineField({
+          name: 'branding',
+          title: 'Brand colors',
+          type: 'object',
+          description: 'Hex colors injected as CSS variables on the site. Leave blank to keep globals.css defaults.',
+          options: {collapsible: true, collapsed: true},
+          fields: [
+            defineField({
+              name: 'brand',
+              title: 'Brand',
+              type: 'string',
+              description: 'Primary brand (`--brand`).',
+              initialValue: DEFAULT_ORG_CONFIG.branding.brand,
+              validation: (Rule) =>
+                Rule.regex(/^#[0-9A-Fa-f]{6}$/, {name: 'hex'}).warning('Use a 6-digit hex like #2B4ACB'),
+            }),
+            defineField({
+              name: 'brandMuted',
+              title: 'Brand muted',
+              type: 'string',
+              initialValue: DEFAULT_ORG_CONFIG.branding.brandMuted,
+              validation: (Rule) =>
+                Rule.regex(/^#[0-9A-Fa-f]{6}$/, {name: 'hex'}).warning('Use a 6-digit hex'),
+            }),
+            defineField({
+              name: 'brandLight',
+              title: 'Brand light',
+              type: 'string',
+              initialValue: DEFAULT_ORG_CONFIG.branding.brandLight,
+              validation: (Rule) =>
+                Rule.regex(/^#[0-9A-Fa-f]{6}$/, {name: 'hex'}).warning('Use a 6-digit hex'),
+            }),
+            defineField({
+              name: 'cta',
+              title: 'CTA',
+              type: 'string',
+              initialValue: DEFAULT_ORG_CONFIG.branding.cta,
+              validation: (Rule) =>
+                Rule.regex(/^#[0-9A-Fa-f]{6}$/, {name: 'hex'}).warning('Use a 6-digit hex'),
+            }),
+            defineField({
+              name: 'ctaHover',
+              title: 'CTA hover',
+              type: 'string',
+              initialValue: DEFAULT_ORG_CONFIG.branding.ctaHover,
+              validation: (Rule) =>
+                Rule.regex(/^#[0-9A-Fa-f]{6}$/, {name: 'hex'}).warning('Use a 6-digit hex'),
+            }),
+          ],
+        }),
+        defineField({
+          name: 'taxonomy',
+          title: 'Taxonomy labels',
+          type: 'object',
+          description:
+            'How domains/phases and tag categories are labeled for this org. Schema Studio titles also read defaults from config/org.ts.',
+          options: {collapsible: true, collapsed: true},
+          fields: [
+            defineField({
+              name: 'domainTypeTitle',
+              title: 'Domain type title',
+              type: 'string',
+              description: 'Studio document type name (e.g. "Phase" or "Domain").',
+              initialValue: DEFAULT_ORG_CONFIG.taxonomy.domainTypeTitle,
+            }),
+            defineField({
+              name: 'domainTypeDescription',
+              title: 'Domain type description',
+              type: 'text',
+              rows: 2,
+              initialValue: DEFAULT_ORG_CONFIG.taxonomy.domainTypeDescription,
+            }),
+            defineField({
+              name: 'domainFieldTitle',
+              title: 'Domain field title',
+              type: 'string',
+              description: 'Label on the shared reference field on knowledge docs.',
+              initialValue: DEFAULT_ORG_CONFIG.taxonomy.domainFieldTitle,
+            }),
+            defineField({
+              name: 'domainFieldDescription',
+              title: 'Domain field description',
+              type: 'string',
+              initialValue: DEFAULT_ORG_CONFIG.taxonomy.domainFieldDescription,
+            }),
+          ],
+        }),
+      ],
+    }),
+
     // ── Global navigation ──
     defineField({
       name: 'navBrandLabel',

@@ -1,4 +1,5 @@
 import { defineField } from 'sanity'
+import { DEFAULT_ORG_CONFIG } from '../../config/org'
 
 export const confidenceField = defineField({
   name: 'confidence',
@@ -19,9 +20,9 @@ export const confidenceField = defineField({
 
 export const phaseField = defineField({
   name: 'phases',
-  title: 'Design phases',
+  title: DEFAULT_ORG_CONFIG.taxonomy.domainFieldTitle,
   type: 'array',
-  description: 'Which phase(s) of the design process does this apply to?',
+  description: DEFAULT_ORG_CONFIG.taxonomy.domainFieldDescription,
   of: [
     {
       type: 'reference',
@@ -71,7 +72,7 @@ export const maturityField = defineField({
     list: [
       { title: 'Everyone — universal regardless of experience', value: 'universal' },
       { title: 'New to team — helpful context for onboarding', value: 'onboarding' },
-      { title: 'Practitioner — assumes core design competency', value: 'practitioner' },
+      { title: DEFAULT_ORG_CONFIG.practitionerMaturityLabel, value: 'practitioner' },
       { title: 'Senior — nuanced, requires broader context', value: 'senior' },
     ],
     layout: 'radio',

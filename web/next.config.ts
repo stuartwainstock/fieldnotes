@@ -2,8 +2,9 @@ import path from 'path'
 import type {NextConfig} from 'next'
 
 const nextConfig: NextConfig = {
+  // Allow importing shared org config from the monorepo root (`config/org.ts`).
   turbopack: {
-    root: path.join(__dirname),
+    root: path.join(__dirname, '..'),
   },
   async headers() {
     const csp = [

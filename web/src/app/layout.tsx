@@ -3,6 +3,7 @@ import Link from 'next/link'
 import {Geist_Mono, Nunito} from 'next/font/google'
 import {GoogleAnalytics} from '@/components/GoogleAnalytics'
 import {JsonLd} from '@/components/JsonLd'
+import {getOrgConfig, orgBrandingStyle} from '@/lib/orgConfig'
 import {getSiteContent} from '@/lib/sanity'
 import {getSiteUrl} from '@/lib/siteUrl'
 import {graph, organizationSchema, websiteSchema} from '@/lib/structuredData'
@@ -53,15 +54,19 @@ export default async function RootLayout({
   children: React.ReactNode
 }>) {
   const site = await getSiteContent()
+  const org = await getOrgConfig()
   const brandLabel = site.navBrandLabel || 'fieldnotes.design'
   const ctaLabel = site.navCtaLabel || 'Chat'
   const ctaHref = site.navCtaHref || '/chat'
   const siteUrl = getSiteUrl()
   const siteSchema = graph(organizationSchema(site, siteUrl), websiteSchema(site, siteUrl))
+  const brandingStyle = orgBrandingStyle(org.branding)
 
   return (
     <html lang="en" className={`${nunito.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="text-foreground flex min-h-full flex-col">
+        {/* Org brand colors override globals.css defaults when set in siteContent.org */}
+        <style dangerouslySetInnerHTML={{__html: `:root{${brandingStyle}}`}} />
         <JsonLd data={siteSchema} />
         <GoogleAnalytics />
         <a href="#main-content" className="skip-link sr-only">

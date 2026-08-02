@@ -6,7 +6,7 @@ This is the authoritative reference for anyone (human or AI) working in this cod
 
 A **second brain for a product design team** — not a generic chatbot, not a wiki search. The goal is to make institutional design leadership knowledge self-service so that quality standards are implicit rather than explicit for the end user. A designer asks a question; the agent answers with the team's own judgment, frameworks, and principles — cited, opinionated, and calibrated to the asker's experience level.
 
-The north star: **if the design lead would say it in a critique, the agent should be able to say it too.**
+The north star (default for this instance): **if the design lead would say it in a critique, the agent should be able to say it too.** Org-specific framing lives in the org config layer — do not hardcode a new north star into `route.ts`.
 
 ## Architecture
 
@@ -70,6 +70,8 @@ Uses the same `ANTHROPIC_API_KEY` and optional `CHAT_ACCESS_TOKEN` as `/api/chat
 
 ```
 /                           Sanity Studio (root workspace)
+├── config/
+│   └── org.ts              Org config defaults + shape (white-label layer)
 ├── sanity.config.ts        Studio configuration (project: eff153ps, dataset: production)
 ├── schemaTypes/
 │   ├── index.ts            Exports all types — order matters for Studio sidebar
@@ -79,8 +81,9 @@ Uses the same `ANTHROPIC_API_KEY` and optional `CHAT_ACCESS_TOKEN` as `/api/chat
 │   │   ├── insight.ts      Learnings from research or experience
 │   │   ├── principle.ts    Opinionated one-liners, core beliefs
 │   │   ├── externalResource.ts  Annotated external references
-│   │   ├── phase.ts        Design process phases (taxonomy)
+│   │   ├── phase.ts        Process stages / domains (taxonomy)
 │   │   ├── tag.ts          Cross-cutting tags with categories (taxonomy)
+│   │   ├── siteContent.ts  Singleton: page copy + org config overrides
 │   │   └── sourceAuthor.ts Reusable author references
 │   └── objects/
 │       ├── sharedFields.ts Shared field definitions — the single source of truth
@@ -225,6 +228,7 @@ Every retrieval path should label its method (the `retrievalMethod` string) so i
 
 The system prompt in `route.ts` is carefully constructed. When modifying it:
 
+- The **agent role line** and **north-star line** come from org config (`getOrgConfig()`), not hardcoded strings. Edit them in Sanity `siteContent.org` or `config/org.ts` defaults.
 - The agent must answer **only from context**. If the answer isn't in the context, it should say so and suggest what kind of entry would help.
 - Confidence levels must shape language: evergreen = confident, evolving = directional, experimental = caveated, retired = flagged.
 - Maturity levels must shape depth: onboarding = more foundational context, senior = concise and nuanced.
@@ -258,9 +262,31 @@ The current surface is a web chat. Planned future surfaces include:
 
 All surfaces should share the retrieval layer (`knowledge.ts` and the Edge Functions). The system prompt may vary per surface, but the context format should not. Design retrieval changes with multiple consumers in mind.
 
+### Org config layer (white-label)
+
+Org-specific choices are isolated from engine code so a fork can rebrand without merge-conflicting on retrieval, schemas, or Edge Functions.
+
+| Concern | Where it lives |
+|---------|----------------|
+| Defaults (code) | `config/org.ts` — `DEFAULT_ORG_CONFIG`, `KNOWLEDGE_TYPE_REGISTRY` |
+| Editable overrides | Sanity `siteContent` singleton → `org` object |
+| Runtime merge | `web/src/lib/orgConfig.ts` → `getOrgConfig()` |
+
+**Shape covers:** display name, agent role line, north-star line, export role line, brand colors (CSS vars), enabled knowledge types, taxonomy labels (domain/phase field titles + tag category labels), and a few Studio description strings.
+
+**Consumers today:**
+- Chat system prompt (`web/src/app/api/chat/route.ts`)
+- Export structuring prompt (`web/src/app/api/export/route.ts`)
+- Brand CSS injection (`web/src/app/layout.tsx`)
+- Studio schema titles/descriptions that used to hardcode design-team language (`phase`, `tag`, `principle`, `sharedFields`)
+
+**Engine vs org:** Retrieval, embeddings, confidence/maturity mechanics, fallback chain, and document-type *schemas* stay engine. Copy, colors, prompt framing, which types an org enables, and taxonomy *labels* stay org config. When forking for a new org, prefer editing `siteContent.org` (and seed data) over changing engine files.
+
+Landing/chat/SEO *page copy* remains on the rest of the `siteContent` singleton — that is still the right place for marketing text; `org` is for white-label engine framing.
+
 ### Site content cache (landing + chat copy)
 
-Copy is loaded via `getSiteContent()` in `web/src/lib/sanity.ts` from the `siteContent` singleton. Pages use ISR (`revalidate = 60` on the root layout) as a fallback. For instant updates when editors publish in Studio, set `REVALIDATE_SECRET` on Vercel and point a Sanity webhook at `POST /api/revalidate?secret=…` filtered to `_type == "siteContent"`. See `web/README.md` for setup steps.
+Copy (and org overrides) is loaded via `getSiteContent()` in `web/src/lib/sanity.ts` from the `siteContent` singleton. Pages use ISR (`revalidate = 60` on the root layout) as a fallback. For instant updates when editors publish in Studio, set `REVALIDATE_SECRET` on Vercel and point a Sanity webhook at `POST /api/revalidate?secret=…` filtered to `_type == "siteContent"`. See `web/README.md` for setup steps.
 
 ### Analytics and query tracking
 
@@ -274,6 +300,7 @@ The query log uses the same Supabase service role key as RAG. RLS is enabled wit
 ## Things not to do
 
 - Don't hardcode knowledge in the system prompt. Everything the agent knows comes from the content in Sanity, retrieved via RAG or GROQ.
+- Don't hardcode org framing (role line, north star, brand colors, taxonomy labels) in engine files — use `config/org.ts` / `siteContent.org`.
 - Don't expose `SUPABASE_SERVICE_ROLE_KEY` to the browser. Ever.
 - Don't skip the fallback chain. If you add a new retrieval method, it must degrade gracefully.
 - Don't create inline field definitions when a shared field exists. Drift between document types is a bug.
@@ -305,6 +332,7 @@ Stuart, Design Leader. Building a design knowledge agent — a second brain for 
 | knowledge embeddings | The Supabase table storing vectorized design knowledge |
 | match_knowledge | SQL function for cosine similarity search |
 | text-embedding-3-small | OpenAI model used for 1536-dim embeddings |
+| org config | White-label layer (`config/org.ts` + `siteContent.org`) — framing, branding, enabled types, taxonomy labels |
 | retrieval method | Label in system prompt showing which fallback path was used |
 | confidence | Content maturity: evergreen / evolving / experimental / retired |
 | maturity | Audience level: universal / onboarding / practitioner / senior |

@@ -8,6 +8,7 @@ import {
   snippetsToContextJson,
   isRAGAvailable,
 } from '@/lib/knowledge'
+import {getOrgConfig} from '@/lib/orgConfig'
 import {logQuery} from '@/lib/queryLog'
 
 export const maxDuration = 60
@@ -147,8 +148,10 @@ export async function POST(request: Request) {
   }
 
   const model = process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-4-6'
+  const org = await getOrgConfig()
 
-  const system = `You are the design-thinking knowledge assistant for a small internal team.
+  const system = `${org.agentRoleLine}
+North star: ${org.northStarLine}
 You must answer ONLY from the CONTEXT below (retrieved from their knowledge base).
 If the answer is not supported by CONTEXT, say you do not have that in the knowledge base and suggest what kind of entry would help.
 

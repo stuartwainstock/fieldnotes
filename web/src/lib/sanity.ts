@@ -65,7 +65,30 @@ export type FaqItem = {
   answer: string
 }
 
+/** Sanity-editable slice of org config (partial overrides of config/org.ts). */
+export type SiteOrgConfig = {
+  displayName: string
+  agentRoleLine: string
+  northStarLine: string
+  exportRoleLine: string
+  enabledKnowledgeTypes: string[]
+  branding: {
+    brand: string
+    brandMuted: string
+    brandLight: string
+    cta: string
+    ctaHover: string
+  }
+  taxonomy: {
+    domainTypeTitle: string
+    domainTypeDescription: string
+    domainFieldTitle: string
+    domainFieldDescription: string
+  }
+}
+
 export type SiteContent = {
+  org: SiteOrgConfig | null
   navBrandLabel: string
   navCtaLabel: string
   navCtaHref: string
@@ -94,6 +117,7 @@ export type SiteContent = {
 }
 
 const SITE_CONTENT_DEFAULTS: SiteContent = {
+  org: null,
   navBrandLabel: 'fieldnotes.design',
   navCtaLabel: 'Chat',
   navCtaHref: '/chat',
@@ -213,6 +237,20 @@ const SITE_CONTENT_DEFAULTS: SiteContent = {
 }
 
 const SITE_CONTENT_QUERY = `*[_type == "siteContent" && _id == "siteContent"][0]{
+  org{
+    displayName,
+    agentRoleLine,
+    northStarLine,
+    exportRoleLine,
+    enabledKnowledgeTypes,
+    branding{ brand, brandMuted, brandLight, cta, ctaHover },
+    taxonomy{
+      domainTypeTitle,
+      domainTypeDescription,
+      domainFieldTitle,
+      domainFieldDescription
+    }
+  },
   navBrandLabel,
   navCtaLabel,
   navCtaHref,
@@ -345,6 +383,13 @@ export async function getSiteContent(): Promise<SiteContent> {
             f.answer.trim().length > 0,
         )
         .map((f) => ({question: f.question.trim(), answer: f.answer.trim()}))
+    }
+
+    // Org config is optional — pass through as a partial for getOrgConfig() to merge.
+    if (data.org && typeof data.org === 'object') {
+      merged.org = data.org as SiteOrgConfig
+    } else {
+      merged.org = null
     }
 
     return merged

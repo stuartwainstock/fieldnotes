@@ -5,6 +5,7 @@ import {
   parseStructuredSlides,
   truncateExportContent,
 } from '@/lib/exportSlides'
+import {getOrgConfig} from '@/lib/orgConfig'
 import {renderPptx} from '@/lib/renderPptx'
 
 export const maxDuration = 60
@@ -16,7 +17,8 @@ function checkChatToken(request: Request): boolean {
   return got === expected
 }
 
-const STRUCTURING_PROMPT = `You restructure design knowledge into presentation slides.
+function buildStructuringPrompt(exportRoleLine: string): string {
+  return `${exportRoleLine}
 
 Given the user's question and the assistant's response, create a concise slide deck.
 
@@ -38,6 +40,7 @@ Return ONLY valid JSON matching this schema (no markdown fences, no explanation)
     }
   ]
 }`
+}
 
 function mapAnthropicError(err: unknown): {message: string; status: number} {
   let message = 'Claude request failed'
@@ -61,6 +64,7 @@ async function structureIntoSlides(
   question: string,
   content: string,
   apiKey: string,
+  exportRoleLine: string,
 ) {
   const client = new Anthropic({apiKey})
   const model = process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-4-6'
@@ -70,7 +74,7 @@ async function structureIntoSlides(
     response = await client.messages.create({
       model,
       max_tokens: 2048,
-      system: STRUCTURING_PROMPT,
+      system: buildStructuringPrompt(exportRoleLine),
       messages: [
         {
           role: 'user',
@@ -129,7 +133,13 @@ export async function POST(request: Request) {
   }
 
   try {
-    const structured = await structureIntoSlides(question, content, apiKey)
+    const org = await getOrgConfig()
+    const structured = await structureIntoSlides(
+      question,
+      content,
+      apiKey,
+      org.exportRoleLine,
+    )
     const buffer = await renderPptx(structured)
     const filename = exportFilename(structured.deckTitle)
 
