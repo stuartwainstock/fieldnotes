@@ -40,7 +40,7 @@ export async function fetchRAGContext(
     matchCount?: number
     filterType?: string
     filterConfidence?: string
-    filterPhase?: string
+    filterDomain?: string
   },
 ): Promise<KnowledgeMatch[]> {
   const config = getSupabaseConfig()
@@ -58,7 +58,7 @@ export async function fetchRAGContext(
       match_count: options?.matchCount ?? 8,
       filter_type: options?.filterType ?? null,
       filter_confidence: options?.filterConfidence ?? null,
-      filter_phase: options?.filterPhase ?? null,
+      filter_domain: options?.filterDomain ?? null,
     }),
   })
 
@@ -134,6 +134,7 @@ export function matchesToContextJson(matches: KnowledgeMatch[], maxChars = 24000
       ...(sourceUrl ? {sourceUrl} : {}),
       confidence: (m.metadata?.confidence as string) ?? undefined,
       maturity: (m.metadata?.maturity as string) ?? undefined,
+      status: (m.metadata?.status as string) ?? undefined,
       similarity: Math.round(sim * 1000) / 1000,
     }
   })
@@ -155,10 +156,15 @@ const KNOWLEDGE_SNIPPET_QUERY = `*[_type in $types]|order(_updatedAt desc)[0...4
   term,
   expansion,
   category,
+  decision,
+  status,
+  alternativesConsidered,
   summary,
   quote,
   "myTake": pt::text(myTake),
   "definition": pt::text(definition),
+  "context": pt::text(context),
+  "outcome": pt::text(outcome),
   implications,
   "elaboration": pt::text(elaboration),
   whyItMatters,
@@ -167,6 +173,7 @@ const KNOWLEDGE_SNIPPET_QUERY = `*[_type in $types]|order(_updatedAt desc)[0...4
   maturity,
   "slug": slug.current,
   "sourceAuthor": sourceAuthor->name,
+  "owner": owner->name,
   sourceTitle,
   sourceUrl,
   url,
@@ -184,6 +191,7 @@ export async function fetchSanityFallbackContext(): Promise<KnowledgeSnippet[]> 
       'principle',
       'externalResource',
       'glossary',
+      'decision',
     ],
   })
 }
@@ -195,6 +203,7 @@ export function snippetsToContextJson(rows: KnowledgeSnippet[], maxChars = 14000
       (r.name as string) ||
       (r.statement as string) ||
       (r.term as string) ||
+      (r.decision as string) ||
       (r._id as string)
     return {
       type: r._type,
@@ -208,6 +217,12 @@ export function snippetsToContextJson(rows: KnowledgeSnippet[], maxChars = 14000
       elaboration: r.elaboration,
       whyItMatters: r.whyItMatters,
       keyTakeaways: r.keyTakeaways,
+      decision: r.decision,
+      context: r.context,
+      alternativesConsidered: r.alternativesConsidered,
+      outcome: r.outcome,
+      owner: r.owner,
+      status: r.status,
       confidence: r.confidence,
       maturity: r.maturity,
       sourceAuthor: r.sourceAuthor,

@@ -16,6 +16,7 @@ const KNOWLEDGE_TYPES = new Set([
   'principle',
   'externalResource',
   'glossary',
+  'decision',
 ])
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
@@ -40,16 +41,23 @@ function documentToText(doc: Record<string, unknown>): string {
     if (Array.isArray(val) && val.length) parts.push(`${label}: ${val.join('; ')}`)
   }
 
-  add('Title', doc.title ?? doc.statement ?? doc.term ?? doc.name)
+  add('Title', doc.title ?? doc.statement ?? doc.term ?? doc.decision ?? doc.name)
   add('Type', doc._type)
   add('Summary', doc.summary)
   add('Expansion', doc.expansion)
   add('Category', doc.category)
+  add('Status', doc.status)
 
   const bodyText = portableTextToPlain(
     doc.body ?? doc.elaboration ?? doc.myTake ?? doc.definition,
   )
   if (bodyText) parts.push(`Body: ${bodyText}`)
+
+  const contextText = portableTextToPlain(doc.context)
+  if (contextText) parts.push(`Context: ${contextText}`)
+
+  const outcomeText = portableTextToPlain(doc.outcome)
+  if (outcomeText) parts.push(`Outcome: ${outcomeText}`)
 
   add('When to use', doc.whenToUse)
   add('Anti-patterns', doc.antiPatterns)
@@ -70,6 +78,7 @@ function documentToText(doc: Record<string, unknown>): string {
   addArray('Common mistakes', doc.commonMistakes)
   addArray('Key takeaways', doc.keyTakeaways)
   addArray('Implications', doc.implications)
+  addArray('Alternatives considered', doc.alternativesConsidered)
 
   if (Array.isArray(doc.steps)) {
     const stepText = doc.steps
@@ -88,8 +97,8 @@ function buildMetadata(doc: Record<string, unknown>): Record<string, unknown> {
   const metadata: Record<string, unknown> = {}
   if (doc.confidence) metadata.confidence = doc.confidence
   if (doc.maturity) metadata.maturity = doc.maturity
-  if (Array.isArray(doc.phases)) {
-    metadata.phases = doc.phases.map((p: {_ref?: string}) => p._ref ?? p)
+  if (Array.isArray(doc.domains)) {
+    metadata.domains = doc.domains.map((p: {_ref?: string}) => p._ref ?? p)
   }
   if (Array.isArray(doc.tags)) {
     metadata.tags = doc.tags.map((t: {_ref?: string}) => t._ref ?? t)
@@ -102,6 +111,9 @@ function buildMetadata(doc: Record<string, unknown>): Record<string, unknown> {
   }
   if (typeof doc.url === 'string' && doc.url.trim()) {
     metadata.url = doc.url.trim()
+  }
+  if (typeof doc.status === 'string' && doc.status.trim()) {
+    metadata.status = doc.status.trim()
   }
   return metadata
 }
@@ -229,7 +241,7 @@ Deno.serve(async (req: Request) => {
 
     const embedding = await generateEmbedding(contentText)
     const metadata = buildMetadata(doc)
-    const title = String(doc.title ?? doc.statement ?? doc.term ?? doc.name ?? sanityId)
+    const title = String(doc.title ?? doc.statement ?? doc.term ?? doc.decision ?? doc.name ?? sanityId)
 
     const {error: upsertError} = await supabase.from('knowledge_embeddings').upsert(
       {

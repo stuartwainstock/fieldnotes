@@ -3,7 +3,7 @@ import { BlockquoteIcon } from '@sanity/icons'
 import { DEFAULT_ORG_CONFIG } from '../../config/org'
 import {
   confidenceField,
-  phaseField,
+  domainField,
   tagsField,
   relatedEntriesField,
   maturityField,
@@ -70,7 +70,7 @@ export const principleDocument = defineType({
     sourceAuthorField,
     sourceTitleField,
     sourceUrlField,
-    phaseField,
+    domainField,
     tagsField,
     confidenceField,
     maturityField,

@@ -2,7 +2,7 @@ import { defineType, defineField } from 'sanity'
 import { ArrowRightIcon } from '@sanity/icons'
 import {
   confidenceField,
-  phaseField,
+  domainField,
   tagsField,
   relatedEntriesField,
   maturityField,
@@ -90,7 +90,7 @@ export const processDocument = defineType({
     sourceAuthorField,
     sourceTitleField,
     sourceUrlField,
-    phaseField,
+    domainField,
     tagsField,
     confidenceField,
     maturityField,

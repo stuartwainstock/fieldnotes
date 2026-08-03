@@ -2,7 +2,7 @@ import { defineType, defineField } from 'sanity'
 import { BulbOutlineIcon } from '@sanity/icons'
 import {
   confidenceField,
-  phaseField,
+  domainField,
   tagsField,
   relatedEntriesField,
   maturityField,
@@ -56,7 +56,7 @@ export const insightDocument = defineType({
     sourceAuthorField,
     sourceTitleField,
     sourceUrlField,
-    phaseField,
+    domainField,
     tagsField,
     confidenceField,
     maturityField,

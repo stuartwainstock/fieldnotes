@@ -2,7 +2,7 @@ import {defineType, defineField} from 'sanity'
 import {BookIcon} from '@sanity/icons'
 import {
   confidenceField,
-  phaseField,
+  domainField,
   tagsField,
   relatedEntriesField,
   maturityField,
@@ -58,7 +58,7 @@ export const glossaryDocument = defineType({
     sourceAuthorField,
     sourceTitleField,
     sourceUrlField,
-    phaseField,
+    domainField,
     tagsField,
     confidenceField,
     maturityField,

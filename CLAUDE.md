@@ -1,12 +1,54 @@
-# Design Knowledge Agent — Project Rules
+# fieldnotes — Project Rules
 
 This is the authoritative reference for anyone (human or AI) working in this codebase. Read it before writing code, adding schemas, or modifying the pipeline. If something here conflicts with a quick-fix instinct, this document wins.
 
 ## What this project is
 
-A **second brain for a product design team** — not a generic chatbot, not a wiki search. The goal is to make institutional design leadership knowledge self-service so that quality standards are implicit rather than explicit for the end user. A designer asks a question; the agent answers with the team's own judgment, frameworks, and principles — cited, opinionated, and calibrated to the asker's experience level.
+A **second brain for a team's institutional knowledge** — not a generic chatbot, not a wiki search. The goal is to make judgment, frameworks, and operating principles self-service so quality standards are implicit rather than explicit for the end user. Someone asks a question; the agent answers with the team's own voice — cited, opinionated, and calibrated to the asker's experience level.
 
-The north star (default for this instance): **if the design lead would say it in a critique, the agent should be able to say it too.** Org-specific framing lives in the org config layer — do not hardcode a new north star into `route.ts`.
+The north star is **org-specific** (role line + north-star line in org config). Defaults for this reference instance live in `config/org.ts`; never hardcode a new north star into `route.ts` or `chatSystemPrompt.ts`.
+
+### Instance history
+
+This repo was renamed from `design-thinking` to `fieldnotes` on **Aug 2, 2026**, then generalized for white-label / multi-instance use (org config layer, glossary + decision types, `phase` → `domain` taxonomy, config-driven system prompt). The first reference instance remains a product-design knowledge base; the next planned instance is Eleanor Leftwich (ops / ecomm). Treat fieldnotes as the **upstream engine**; org-specific forks customize config and content, not retrieval.
+
+## Multi-instance / white-label
+
+The engine is built so a new org can stand up an instance without forking retrieval logic, schema shapes, or Edge Functions.
+
+### Config vs engine
+
+| Layer | Lives in | Customize downstream? |
+|-------|----------|------------------------|
+| **Engine** | Retrieval (`knowledge.ts`), Edge Functions, `match_knowledge`, base document-type schemas, confidence/maturity mechanics, fallback chain, chat UI | **No** — pull from upstream |
+| **Org config** | `config/org.ts` defaults + Sanity `siteContent.org` overrides | **Yes** — framing, branding, enabled types, taxonomy *labels* |
+| **Org content** | Sanity dataset (knowledge docs, domain values, tags, page copy) | **Yes** — this is the product |
+
+Runtime merge: `web/src/lib/orgConfig.ts` → `getOrgConfig()` overlays Sanity `org` onto `DEFAULT_ORG_CONFIG`.
+
+**Shape covers:** display name, agent role line, north-star line, export role line, brand colors (CSS vars), enabled knowledge types, taxonomy labels (domain field titles + tag category labels), and a few Studio description strings.
+
+**Consumers today:** chat system prompt (`chatSystemPrompt.ts` via `route.ts`), export structuring prompt, brand CSS in `layout.tsx`, Studio titles/descriptions for domain/tag/principle/shared fields.
+
+Landing/chat/SEO *page copy* stays on the rest of the `siteContent` singleton — marketing text, not engine framing.
+
+### Knowledge types added for generalization
+
+- **`glossary`** — acronyms and internal jargon (`term`, optional `expansion`, `definition`). The type that made white-labeling necessary: every org has vocabulary that isn't a framework or principle.
+- **`decision`** — lightweight ADR for business/operational calls (`decision`, `context`, `alternativesConsidered`, `outcome`, `owner`, `status` active/superseded). Superseded decisions stay retrievable; the system prompt flags them like retired confidence.
+
+Both are first-class knowledge types: embedded, GROQ-fallback eligible, and linkable via `relatedEntries`.
+
+### Taxonomy rename
+
+`phase` → **`domain`**. The mechanism is unchanged (reference-based taxonomy; rename a value and it updates everywhere). Seed values are org-supplied (`seedDomains` in `scripts/seed-data.ts` ships empty). Studio field titles come from org config (`Domains`, or whatever the org calls them). Shared field: `domainField` → `domains[]`. RAG filter: `filter_domain` on `metadata.domains`.
+
+### Fork / upstream isolation (summary)
+
+- **Upstream:** this repo (`fieldnotes`) — engine improvements land here first.
+- **Downstream:** org forks add `upstream` and pull periodically; customize `siteContent.org`, domain/tag seeds, and Sanity content only.
+- **Rule of thumb:** if a change belongs in every instance, it goes upstream in engine files. If it names a person, brand, or function unique to one org, it stays in org config / content.
+- Full pull cadence and conflict guidance: ticket 08 → `docs/FORKING.md` (forthcoming). File-boundary conventions: ticket 09.
 
 ## Architecture
 
@@ -29,10 +71,10 @@ User question → Next.js API route → Supabase Edge Function (embed + search)
 ### Data flow: publish → embed → store
 
 1. Author publishes/updates a document in Sanity Studio.
-2. Sanity webhook fires (filtered to `framework`, `process`, `insight`, `principle`, `externalResource`, `glossary`).
+2. Sanity webhook fires (filtered to knowledge types in `KNOWLEDGE_TYPES`: `framework`, `process`, `insight`, `principle`, `externalResource`, `glossary`, `decision`).
 3. `sanity-webhook` Edge Function receives the event, fetches the full document from Sanity API, flattens all content (Portable Text blocks, string arrays, step objects) into a single `content_text`.
 4. Calls OpenAI to generate a 1536-dimension embedding.
-5. Upserts into `knowledge_embeddings` (keyed on `sanity_id`). Stores `document_type`, `title`, `content_text`, `metadata` (confidence, maturity, phases, tags, sourceTitle, sourceUrl, url for references), and the embedding vector. Source URLs are also flattened into `content_text` for search.
+5. Upserts into `knowledge_embeddings` (keyed on `sanity_id`). Stores `document_type`, `title`, `content_text`, `metadata` (confidence, maturity, domains, tags, sourceTitle, sourceUrl, url for references, status for decisions), and the embedding vector. Source URLs are also flattened into `content_text` for search.
 6. Logs the event to `webhook_log` for debugging.
 7. On delete/unpublish: removes the embedding row.
 
@@ -82,7 +124,8 @@ Uses the same `ANTHROPIC_API_KEY` and optional `CHAT_ACCESS_TOKEN` as `/api/chat
 │   │   ├── principle.ts    Opinionated one-liners, core beliefs
 │   │   ├── externalResource.ts  Annotated external references
 │   │   ├── glossary.ts     Acronyms and internal terms
-│   │   ├── phase.ts        Process stages / domains (taxonomy)
+│   │   ├── decision.ts     Business/operational calls (lightweight ADR)
+│   │   ├── domain.ts       Org taxonomy domains / functions
 │   │   ├── tag.ts          Cross-cutting tags with categories (taxonomy)
 │   │   ├── siteContent.ts  Singleton: page copy + org config overrides
 │   │   └── sourceAuthor.ts Reusable author references
@@ -92,7 +135,8 @@ Uses the same `ANTHROPIC_API_KEY` and optional `CHAT_ACCESS_TOKEN` as `/api/chat
 ├── lib/
 │   └── supabase.ts         Supabase client helpers (anon + service role)
 ├── scripts/
-│   ├── seed-data.ts            Seed phases, tags, and example documents
+│   ├── seed-data.ts            Seed domains (org-supplied), tags, and example documents
+│   ├── reindex-knowledge-embeddings.ts  Re-POST all knowledge docs to the webhook
 │   └── import-mymind.ts        One-off MyMind → Sanity import (reads local JSON; see .gitignore)
 ├── web/                    Next.js app (separate workspace)
 │   ├── src/
@@ -105,6 +149,8 @@ Uses the same `ANTHROPIC_API_KEY` and optional `CHAT_ACCESS_TOKEN` as `/api/chat
 │   │   │   └── ChatPanel.tsx       Client-side chat UI
 │   │   └── lib/
 │   │       ├── knowledge.ts        RAG + GROQ retrieval logic
+│   │       ├── chatSystemPrompt.ts System prompt assembly (org framing + engine rules)
+│   │       ├── orgConfig.ts        Runtime merge of siteContent.org onto defaults
 │   │       └── sanity.ts           Sanity client singleton
 │   ├── e2e/
 │   │   └── accessibility.spec.ts   axe WCAG 2.1 AA tests
@@ -112,8 +158,12 @@ Uses the same `ANTHROPIC_API_KEY` and optional `CHAT_ACCESS_TOKEN` as `/api/chat
 │   ├── .env.example                Template for required env vars
 │   └── CLAUDE.md → AGENTS.md      Next.js-specific agent rules
 ├── supabase/
+│   ├── functions/
+│   │   ├── sanity-webhook/         Embed on publish
+│   │   └── rag-query/              Embed question + match_knowledge
 │   └── migrations/
-│       └── 20260518_create_chat_queries.sql   Query log table
+│       ├── 20260518_create_chat_queries.sql
+│       └── 20260803_*_domain_filter.sql   phase → domain filter rename
 └── CLAUDE.md               ← You are here
 ```
 
@@ -121,7 +171,7 @@ Uses the same `ANTHROPIC_API_KEY` and optional `CHAT_ACCESS_TOKEN` as `/api/chat
 
 ### Sanity Studio: single-page field layout
 
-Knowledge document types (**framework**, **process**, **insight**, **principle**, **externalResource**, **glossary**) intentionally use **one flat `fields` list** — no `groups` on `defineType`, so the Studio is a **single scrollable page** per document. Taxonomy and attribution still come from **`sharedFields.ts`**; add them by importing the exported field objects (`confidenceField`, `phaseField`, …) and listing them in sensible order (core content first, then attribution, then taxonomy).
+Knowledge document types (**framework**, **process**, **insight**, **principle**, **externalResource**, **glossary**, **decision**) intentionally use **one flat `fields` list** — no `groups` on `defineType`, so the Studio is a **single scrollable page** per document. Taxonomy and attribution still come from **`sharedFields.ts`**; add them by importing the exported field objects (`confidenceField`, `domainField`, …) and listing them in sensible order (core content first, then attribution, then taxonomy).
 
 If you ever bring back tabs, add a `groups` array to the type and set `group` on each field (typically via `{ ...sharedField, group: 'taxonomy' }`).
 
@@ -135,20 +185,21 @@ Every document type encodes a different kind of knowledge. This is intentional �
 - **Principle** — opinionated one-liners with `elaboration`, `goodExample`, `antiExample`, `tension`. The agent should state these with conviction, not hedging.
 - **External Resource** — annotated links. Has `whyItMatters` and `keyTakeaways`. The agent uses `whyItMatters` to decide when to surface a reference.
 - **Glossary** — acronyms and internal jargon. Has `term`, optional `expansion` (what it stands for), and `definition` (Portable Text). The agent should define the term plainly and use the team's expansion when present.
-- **Phase** — taxonomy only. Represents stages of the design process (Discovery, Definition, Delivery, etc.).
+- **Decision** — business or operational calls (lightweight ADR). Has `decision` (one-line call), `context`, optional `alternativesConsidered`, `outcome`, `owner` (reference to `sourceAuthor`), and `status` (`active` / `superseded`). Present active decisions as current guidance; flag superseded ones as historical (same stance as retired confidence).
+- **Domain** — taxonomy only. High-level areas of the team's work (org-supplied values — process stages, business functions, etc.). Labels come from org config.
 - **Tag** — taxonomy with `category` (discipline, activity, mindset, stakeholder, quality, tool). Used for cross-cutting classification.
 - **Source Author** — reusable author records. Create once, reference everywhere.
 
 ### The shared fields contract
 
-All knowledge document types (framework, process, insight, principle, externalResource, glossary) share a common set of fields defined in `sharedFields.ts`. This is non-negotiable:
+All knowledge document types (framework, process, insight, principle, externalResource, glossary, decision) share a common set of fields defined in `sharedFields.ts`. This is non-negotiable:
 
 - **`confidence`** — evergreen / evolving / experimental / retired. Shapes how the agent talks about the entry. Evergreen = state with conviction. Experimental = caveat clearly. Retired = flag as historical.
 - **`maturity`** — universal / onboarding / practitioner / senior. Calibrates response depth. Onboarding = give more foundational context. Senior = be concise and nuanced.
-- **`phases`** — references to Phase documents. Which stage(s) of the design process this applies to.
+- **`domains`** — references to Domain documents. Which area(s) of work this applies to.
 - **`tags`** — references to Tag documents. Cross-cutting classification.
 - **`relatedEntries`** — weak references to other knowledge documents. This is the connective tissue of the knowledge graph. Use it generously.
-- **Attribution** — On **framework**, **process**, **insight**, **principle**, and **glossary**: `sourceAuthor` (reference), `sourceTitle`, `sourceUrl` from `sharedFields.ts`. On **externalResource**, the person link is the **`author`** field (same `sourceAuthor` document type); there is no separate `sourceAuthor` field name on that type.
+- **Attribution** — On **framework**, **process**, **insight**, **principle**, and **glossary**: `sourceAuthor` (reference), `sourceTitle`, `sourceUrl` from `sharedFields.ts`. On **externalResource**, the person link is the **`author`** field (same `sourceAuthor` document type). On **decision**, the person link is **`owner`** (same `sourceAuthor` type) — accountability for the call, not a bibliographic source.
 
 ### Adding shared fields to a new document type
 
@@ -159,22 +210,26 @@ Never redefine a shared field inline — that creates drift between document typ
 ### Adding a new document type
 
 1. Create the file in `schemaTypes/documents/`.
-2. Import and use all applicable shared fields from `sharedFields.ts`.
-3. Add it to the `KNOWLEDGE_TYPES` set in the `sanity-webhook` Edge Function if it should be embedded.
-4. Add it to the webhook filter in Sanity (`_type in [...]`).
-5. Add it to the `relatedEntriesField.of` array in `sharedFields.ts` so other entries can link to it.
-6. Add it to the GROQ fallback query `$types` array in `knowledge.ts`.
-7. Export it from `schemaTypes/index.ts`.
-8. Update the `match_knowledge` function if the new type needs special filtering.
+2. Import and use all applicable shared fields from `sharedFields.ts` (`confidenceField`, `maturityField`, `domainField`, `tagsField`, `relatedEntriesField`, attribution as appropriate).
+3. Add it to `KNOWLEDGE_TYPE_REGISTRY` in `config/org.ts` (and it will appear in Studio `enabledKnowledgeTypes` options).
+4. Add it to the `KNOWLEDGE_TYPES` set in the `sanity-webhook` Edge Function if it should be embedded; update `documentToText` / `buildMetadata` for any new fields.
+5. Redeploy `sanity-webhook` (preserve `verify_jwt: false`).
+6. Add it to the webhook filter in Sanity Manage (`_type in [...]`).
+7. Add it to the `relatedEntriesField.of` array in `sharedFields.ts` so other entries can link to it.
+8. Add it to the GROQ fallback `$types` array (and projections) in `web/src/lib/knowledge.ts`.
+9. Add it to `KNOWLEDGE_TYPES` in `scripts/reindex-knowledge-embeddings.ts`.
+10. Export it from `schemaTypes/index.ts`.
+11. Deploy Studio schema (`npm run deploy`) so hosted Studio shows the type.
+12. Update `match_knowledge` only if the type needs a *new filter dimension* — new values of `document_type` work with the existing `filter_type` param with no SQL change.
 
-Missing any of these steps means the type either won't be embedded, won't appear in search, or won't be linkable from other entries.
+Missing any of these steps means the type either won't be embedded, won't appear in search, won't be linkable from other entries, or won't show in Studio.
 
 ### Content authoring principles
 
 These are the rules for writing good knowledge base entries, not code:
 
 - **`myTake` and `elaboration` are the most valuable fields.** A quote without interpretation is just a bookmark. The interpretation is what makes this a knowledge base.
-- **`whyItMatters` must be specific.** "Interesting read" is not useful. "Explains why user interviews fail when you ask leading questions — directly applicable to our discovery process" is.
+- **`whyItMatters` must be specific.** "Interesting read" is not useful. "Explains why interviews fail when you ask leading questions — directly applicable to our discovery process" is.
 - **`tension` fields are what make principles real.** A principle without tensions is a platitude. Good principles have edges and occasionally conflict with each other.
 - **Quality signals (`signalsOfGoodWork`, `signalsOfPoorWork`, `commonMistakes`) are the teaching tools.** They're what let the agent say "here's what good looks like" instead of just "here's the theory."
 - **Set `confidence` honestly.** If you're not sure yet, mark it `experimental`. The agent will caveat accordingly. That's better than presenting a half-formed idea as settled truth.
@@ -228,14 +283,15 @@ Every retrieval path should label its method (the `retrievalMethod` string) so i
 
 ### The system prompt contract
 
-The system prompt in `route.ts` is carefully constructed. When modifying it:
+The system prompt is assembled in `web/src/lib/chatSystemPrompt.ts` (called from `route.ts`). When modifying it:
 
-- The **agent role line** and **north-star line** come from org config (`getOrgConfig()`), not hardcoded strings. Edit them in Sanity `siteContent.org` or `config/org.ts` defaults.
+- The **agent role line** and **north-star line** come from org config (`getOrgConfig()`), not hardcoded strings. Edit them in Sanity `siteContent.org` or `config/org.ts` defaults. Both should be complete sentences that read naturally back-to-back — there is no "North star:" label wrapper.
 - The agent must answer **only from context**. If the answer isn't in the context, it should say so and suggest what kind of entry would help.
 - Confidence levels must shape language: evergreen = confident, evolving = directional, experimental = caveated, retired = flagged.
 - Maturity levels must shape depth: onboarding = more foundational context, senior = concise and nuanced.
-- The agent should cite entry types and titles (e.g., "The framework 'How Might We' suggests…").
+- The agent should cite entry types and titles (e.g. "The principle 'Show the work' suggests…" or "The glossary term 'AOV' expands to…").
 - The agent should be **opinionated, not neutral**. The knowledge base embodies judgment.
+- When a decision has `status: superseded`, flag it as historical — same stance as retired confidence.
 - The `retrievalMethod` label is included in the prompt for transparency and debugging.
 
 ## Scaling principles
@@ -243,48 +299,26 @@ The system prompt in `route.ts` is carefully constructed. When modifying it:
 ### What "reusable" means here
 
 - Shared fields live in `sharedFields.ts`. Period. If two document types need the same field, extract it there.
-- Attribution: **`sourceAuthor`** + **`sourceTitle`** + **`sourceUrl`** on framework, process, insight, principle, glossary. On **externalResource**, use **`author`** (reference to the same `sourceAuthor` type) — keep naming consistent with the schema, not a second pattern.
+- Attribution: **`sourceAuthor`** + **`sourceTitle`** + **`sourceUrl`** on framework, process, insight, principle, glossary. On **externalResource**, use **`author`**. On **decision**, use **`owner`**. All three person fields reference the same `sourceAuthor` document type — keep naming consistent with the schema, not a second pattern.
 - The `relatedEntries` field accepts weak references to all knowledge types. When adding a new type, add it to the `to` array.
-- Taxonomy (phases, tags) is reference-based, not string-based. This means renaming a phase updates everywhere automatically.
+- Taxonomy (domains, tags) is reference-based, not string-based. This means renaming a domain updates everywhere automatically.
 
 ### What "scalable" means here
 
 - The GROQ fallback caps at 40 documents. As the knowledge base grows, RAG becomes essential — it retrieves the 8 most relevant entries regardless of total count.
 - The embedding content flattener in the webhook must handle every field type that could appear in a new document type. When adding rich content fields, ensure the flattener extracts their text.
 - Context JSON is truncated at 24,000 chars (RAG) or 14,000 chars (GROQ). These limits exist to stay within Claude's effective context window for grounded answers. Don't raise them without reason.
-- The `match_knowledge` SQL function supports optional filters (type, confidence, phase). New filter dimensions should follow the same pattern: nullable parameter, conditional WHERE clause, no impact when null.
+- The `match_knowledge` SQL function supports optional filters (type, confidence, domain). New filter dimensions should follow the same pattern: nullable parameter, conditional WHERE clause, no impact when null.
 
 ### Future surfaces
 
 The current surface is a web chat. Planned future surfaces include:
 
 - **Slack bot** — same retrieval pipeline, different delivery surface.
-- **Figma plugin** — contextual knowledge surfacing during design work.
+- **Figma plugin** — contextual knowledge surfacing during product work.
 - **CLI / Cursor integration** — knowledge available during development.
 
-All surfaces should share the retrieval layer (`knowledge.ts` and the Edge Functions). The system prompt may vary per surface, but the context format should not. Design retrieval changes with multiple consumers in mind.
-
-### Org config layer (white-label)
-
-Org-specific choices are isolated from engine code so a fork can rebrand without merge-conflicting on retrieval, schemas, or Edge Functions.
-
-| Concern | Where it lives |
-|---------|----------------|
-| Defaults (code) | `config/org.ts` — `DEFAULT_ORG_CONFIG`, `KNOWLEDGE_TYPE_REGISTRY` |
-| Editable overrides | Sanity `siteContent` singleton → `org` object |
-| Runtime merge | `web/src/lib/orgConfig.ts` → `getOrgConfig()` |
-
-**Shape covers:** display name, agent role line, north-star line, export role line, brand colors (CSS vars), enabled knowledge types, taxonomy labels (domain/phase field titles + tag category labels), and a few Studio description strings.
-
-**Consumers today:**
-- Chat system prompt (`web/src/app/api/chat/route.ts`)
-- Export structuring prompt (`web/src/app/api/export/route.ts`)
-- Brand CSS injection (`web/src/app/layout.tsx`)
-- Studio schema titles/descriptions that used to hardcode design-team language (`phase`, `tag`, `principle`, `sharedFields`)
-
-**Engine vs org:** Retrieval, embeddings, confidence/maturity mechanics, fallback chain, and document-type *schemas* stay engine. Copy, colors, prompt framing, which types an org enables, and taxonomy *labels* stay org config. When forking for a new org, prefer editing `siteContent.org` (and seed data) over changing engine files.
-
-Landing/chat/SEO *page copy* remains on the rest of the `siteContent` singleton — that is still the right place for marketing text; `org` is for white-label engine framing.
+All surfaces should share the retrieval layer (`knowledge.ts` and the Edge Functions). The system prompt may vary per surface (and per org via config), but the context format should not. Design retrieval changes with multiple consumers in mind.
 
 ### Site content cache (landing + chat copy)
 
@@ -303,11 +337,12 @@ The query log uses the same Supabase service role key as RAG. RLS is enabled wit
 
 - Don't hardcode knowledge in the system prompt. Everything the agent knows comes from the content in Sanity, retrieved via RAG or GROQ.
 - Don't hardcode org framing (role line, north star, brand colors, taxonomy labels) in engine files — use `config/org.ts` / `siteContent.org`.
+- Don't customize engine files in a downstream fork (retrieval, Edge Functions, base schemas) — pull those from upstream; put org-specific choices in config and content.
 - Don't expose `SUPABASE_SERVICE_ROLE_KEY` to the browser. Ever.
 - Don't skip the fallback chain. If you add a new retrieval method, it must degrade gracefully.
 - Don't create inline field definitions when a shared field exists. Drift between document types is a bug.
 - Don't raise context truncation limits without measuring the impact on answer quality.
-- Don't add document types to the webhook without also adding them to the GROQ fallback, the `relatedEntries` reference list, and the `schemaTypes/index.ts` export.
+- Don't add document types to the webhook without also updating `KNOWLEDGE_TYPE_REGISTRY`, GROQ fallback, `relatedEntries`, reindex script, Studio export, and Sanity Manage webhook filter.
 - Don't use Anthropic for embeddings — they don't offer an embeddings API. Embeddings are OpenAI; reasoning is Claude. These are different concerns.
 - Don't make the agent neutral. It's supposed to have opinions. That's the whole point.
 
@@ -316,7 +351,7 @@ The query log uses the same Supabase service role key as RAG. RLS is enabled wit
 # Memory
 
 ## Me
-Stuart, Design Leader. Building a design knowledge agent — a second brain for a product design team that makes institutional design leadership knowledge self-service.
+Stuart, Design Leader. Building fieldnotes — a white-label knowledge agent engine, with the first instance serving product design institutional knowledge.
 
 ## People
 | Who | Role |
@@ -331,20 +366,25 @@ Stuart, Design Leader. Building a design knowledge agent — a second brain for 
 | GROQ | Sanity's query language (not Groq the AI company) |
 | Portable Text | Sanity's rich text format (array of blocks) |
 | Edge Functions | Supabase Deno-based serverless functions (embed + search) |
-| knowledge embeddings | The Supabase table storing vectorized design knowledge |
-| match_knowledge | SQL function for cosine similarity search |
+| knowledge embeddings | The Supabase table storing vectorized knowledge entries |
+| match_knowledge | SQL function for cosine similarity search (optional type / confidence / domain filters) |
 | text-embedding-3-small | OpenAI model used for 1536-dim embeddings |
 | org config | White-label layer (`config/org.ts` + `siteContent.org`) — framing, branding, enabled types, taxonomy labels |
+| domain | Reference-based taxonomy (formerly `phase`) — org-supplied areas of work |
 | retrieval method | Label in system prompt showing which fallback path was used |
 | confidence | Content maturity: evergreen / evolving / experimental / retired |
 | maturity | Audience level: universal / onboarding / practitioner / senior |
 | myTake | The interpretation field on Insights — the most valuable part |
+| decision | Knowledge type for business/operational calls (lightweight ADR) |
+| glossary | Knowledge type for acronyms and internal terms |
 → Full glossary: memory/glossary.md
 
 ## Projects
 | Name | What |
 |------|------|
-| **Design Knowledge Agent** | RAG-powered chat for design team (Sanity → Supabase → Claude) |
+| **fieldnotes** | Upstream knowledge-agent engine (Sanity → Supabase → Claude) |
+| **fieldnotes.design** | Reference design-org instance of the engine |
+| **Eleanor Leftwich** | Planned ops/ecomm instance (Phase 3) |
 
 ## Tools
 | Tool | Used for |

@@ -18,6 +18,7 @@ export const KNOWLEDGE_TYPE_REGISTRY = [
   'principle',
   'externalResource',
   'glossary',
+  'decision',
 ] as const
 
 export type KnowledgeTypeId = (typeof KNOWLEDGE_TYPE_REGISTRY)[number]
@@ -36,9 +37,9 @@ export type OrgBranding = {
 }
 
 export type OrgTaxonomyLabels = {
-  /** Document type title in Studio (currently "Phase"; later "Domain") */
+  /** Document type title in Studio (e.g. "Domain" or "Function") */
   domainTypeTitle: string
-  /** Description on the domain/phase document type */
+  /** Description on the domain document type */
   domainTypeDescription: string
   /** Title on the reference field shared across knowledge docs */
   domainFieldTitle: string
@@ -103,11 +104,11 @@ export const DEFAULT_ORG_CONFIG: OrgConfig = {
   },
   enabledKnowledgeTypes: [...KNOWLEDGE_TYPE_REGISTRY],
   taxonomy: {
-    domainTypeTitle: 'Phase',
+    domainTypeTitle: 'Domain',
     domainTypeDescription:
-      "A stage in the team's process. Keep these high-level — they're the primary lens for organising all knowledge.",
-    domainFieldTitle: 'Phases',
-    domainFieldDescription: 'Which phase(s) of the process does this apply to?',
+      "A high-level area of the team's work. Keep these coarse — they're the primary lens for organising all knowledge.",
+    domainFieldTitle: 'Domains',
+    domainFieldDescription: 'Which domain(s) does this apply to?',
     tagCategoryLabels: {
       discipline: 'Discipline — area of practice',
       activity: 'Activity — a type of work or exercise',

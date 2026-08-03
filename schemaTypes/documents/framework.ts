@@ -2,7 +2,7 @@ import { defineType, defineField } from 'sanity'
 import { ComponentIcon } from '@sanity/icons'
 import {
   confidenceField,
-  phaseField,
+  domainField,
   tagsField,
   relatedEntriesField,
   maturityField,
@@ -84,7 +84,7 @@ export const frameworkDocument = defineType({
     sourceAuthorField,
     sourceTitleField,
     sourceUrlField,
-    phaseField,
+    domainField,
     tagsField,
     confidenceField,
     maturityField,

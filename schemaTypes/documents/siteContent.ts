@@ -41,7 +41,7 @@ export const siteContentDocument = defineType({
           type: 'text',
           rows: 2,
           description:
-            'The conviction the agent embodies. Example: "If the design lead would say it in a critique, you should be able to say it too."',
+            'Complete sentence that follows the role line in the system prompt — the bar the agent aims for. Example: "If the design lead would say it in a critique, you should be able to say it too."',
           initialValue: DEFAULT_ORG_CONFIG.northStarLine,
         }),
         defineField({
@@ -57,7 +57,7 @@ export const siteContentDocument = defineType({
           type: 'array',
           of: [{type: 'string'}],
           description:
-            'Which knowledge document types this org uses. Leave empty to use all engine types. Values must match the engine registry (framework, process, insight, principle, externalResource, glossary — plus future types).',
+            'Which knowledge document types this org uses. Leave empty to use all engine types. Values must match the engine registry (framework, process, insight, principle, externalResource, glossary, decision — plus future types).',
           options: {
             list: KNOWLEDGE_TYPE_REGISTRY.map((value) => ({title: value, value})),
           },
@@ -118,14 +118,14 @@ export const siteContentDocument = defineType({
           title: 'Taxonomy labels',
           type: 'object',
           description:
-            'How domains/phases and tag categories are labeled for this org. Schema Studio titles also read defaults from config/org.ts.',
+            'How domains and tag categories are labeled for this org. Schema Studio titles also read defaults from config/org.ts.',
           options: {collapsible: true, collapsed: true},
           fields: [
             defineField({
               name: 'domainTypeTitle',
               title: 'Domain type title',
               type: 'string',
-              description: 'Studio document type name (e.g. "Phase" or "Domain").',
+              description: 'Studio document type name (e.g. "Domain" or "Function").',
               initialValue: DEFAULT_ORG_CONFIG.taxonomy.domainTypeTitle,
             }),
             defineField({

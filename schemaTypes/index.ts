@@ -1,4 +1,4 @@
-import { phaseDocument } from './documents/phase'
+import { domainDocument } from './documents/domain'
 import { tagDocument } from './documents/tag'
 import { sourceAuthorDocument } from './documents/sourceAuthor'
 import { frameworkDocument } from './documents/framework'
@@ -7,12 +7,13 @@ import { insightDocument } from './documents/insight'
 import { principleDocument } from './documents/principle'
 import { externalResourceDocument } from './documents/externalResource'
 import { glossaryDocument } from './documents/glossary'
+import { decisionDocument } from './documents/decision'
 import { siteContentDocument } from './documents/siteContent'
 import { stepObject } from './objects/step'
 
 export const schemaTypes = [
   // Taxonomy (define first — referenced by document types)
-  phaseDocument,
+  domainDocument,
   tagDocument,
   sourceAuthorDocument,
 
@@ -29,4 +30,5 @@ export const schemaTypes = [
   principleDocument,
   externalResourceDocument,
   glossaryDocument,
+  decisionDocument,
 ]

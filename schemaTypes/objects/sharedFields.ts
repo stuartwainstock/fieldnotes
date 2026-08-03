@@ -18,15 +18,15 @@ export const confidenceField = defineField({
   initialValue: 'evergreen',
 })
 
-export const phaseField = defineField({
-  name: 'phases',
+export const domainField = defineField({
+  name: 'domains',
   title: DEFAULT_ORG_CONFIG.taxonomy.domainFieldTitle,
   type: 'array',
   description: DEFAULT_ORG_CONFIG.taxonomy.domainFieldDescription,
   of: [
     {
       type: 'reference',
-      to: [{ type: 'phase' }],
+      to: [{type: 'domain'}],
     },
   ],
 })
@@ -59,7 +59,9 @@ export const relatedEntriesField = defineField({
         { type: 'principle' },
         { type: 'externalResource' },
         { type: 'glossary' },
+        { type: 'decision' },
       ],
+
     },
   ],
 })

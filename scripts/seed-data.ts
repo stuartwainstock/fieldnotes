@@ -2,8 +2,9 @@
  * SEED DATA
  * ─────────────────────────────────────────────────────────────────
  * Run this via the Sanity CLI or import via the Sanity dashboard.
- * Provides: 3 phases, a starter tag taxonomy, and one example of
- * each document type so authoring is immediately concrete.
+ * Provides: an empty domain taxonomy slot (org fills at seed time),
+ * a starter tag taxonomy, and one example of each document type so
+ * authoring is immediately concrete.
  *
  * To import: paste into a Sanity dataset import script or use
  * the Sanity CLI: `sanity dataset import seed.ndjson <dataset>`
@@ -11,32 +12,23 @@
  * ─────────────────────────────────────────────────────────────────
  */
 
-export const seedPhases = [
-  {
-    _type: 'phase',
-    name: 'Discovery',
-    slug: { current: 'discovery' },
-    description: 'Understanding the problem space. What questions are we trying to answer? What do we not yet know?',
-    order: 1,
-    color: '#7F77DD',
-  },
-  {
-    _type: 'phase',
-    name: 'Definition',
-    slug: { current: 'definition' },
-    description: 'Synthesising what we learned into a clear problem statement and design direction. What are we going to solve, and how?',
-    order: 2,
-    color: '#1D9E75',
-  },
-  {
-    _type: 'phase',
-    name: 'Delivery',
-    slug: { current: 'delivery' },
-    description: 'Designing, testing, and shipping. How do we make it real without losing the intent?',
-    order: 3,
-    color: '#D85A30',
-  },
-]
+/**
+ * Domain taxonomy values are org-specific — not baked into the engine.
+ * Populate this array at seed time per org (see ticket 14 for Eleanor Leftwich).
+ *
+ * Example entry:
+ * { _type: 'domain', name: 'Ecomm', slug: { current: 'ecomm' }, order: 1, color: '#7F77DD' }
+ */
+export type SeedDomain = {
+  _type: 'domain'
+  name: string
+  slug: {current: string}
+  description?: string
+  order?: number
+  color?: string
+}
+
+export const seedDomains: SeedDomain[] = []
 
 export const seedTags = [
   // Discipline

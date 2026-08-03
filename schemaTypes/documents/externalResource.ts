@@ -2,7 +2,7 @@ import { defineType, defineField } from 'sanity'
 import { BookIcon } from '@sanity/icons'
 import {
   confidenceField,
-  phaseField,
+  domainField,
   tagsField,
   relatedEntriesField,
   maturityField,
@@ -79,7 +79,7 @@ export const externalResourceDocument = defineType({
       of: [{ type: 'text' }],
       description: 'Specific lines worth remembering or referencing.',
     }),
-    phaseField,
+    domainField,
     tagsField,
     confidenceField,
     maturityField,
