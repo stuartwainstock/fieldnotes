@@ -29,7 +29,7 @@ User question → Next.js API route → Supabase Edge Function (embed + search)
 ### Data flow: publish → embed → store
 
 1. Author publishes/updates a document in Sanity Studio.
-2. Sanity webhook fires (filtered to `framework`, `process`, `insight`, `principle`, `externalResource`).
+2. Sanity webhook fires (filtered to `framework`, `process`, `insight`, `principle`, `externalResource`, `glossary`).
 3. `sanity-webhook` Edge Function receives the event, fetches the full document from Sanity API, flattens all content (Portable Text blocks, string arrays, step objects) into a single `content_text`.
 4. Calls OpenAI to generate a 1536-dimension embedding.
 5. Upserts into `knowledge_embeddings` (keyed on `sanity_id`). Stores `document_type`, `title`, `content_text`, `metadata` (confidence, maturity, phases, tags, sourceTitle, sourceUrl, url for references), and the embedding vector. Source URLs are also flattened into `content_text` for search.
@@ -81,6 +81,7 @@ Uses the same `ANTHROPIC_API_KEY` and optional `CHAT_ACCESS_TOKEN` as `/api/chat
 │   │   ├── insight.ts      Learnings from research or experience
 │   │   ├── principle.ts    Opinionated one-liners, core beliefs
 │   │   ├── externalResource.ts  Annotated external references
+│   │   ├── glossary.ts     Acronyms and internal terms
 │   │   ├── phase.ts        Process stages / domains (taxonomy)
 │   │   ├── tag.ts          Cross-cutting tags with categories (taxonomy)
 │   │   ├── siteContent.ts  Singleton: page copy + org config overrides
@@ -120,7 +121,7 @@ Uses the same `ANTHROPIC_API_KEY` and optional `CHAT_ACCESS_TOKEN` as `/api/chat
 
 ### Sanity Studio: single-page field layout
 
-Knowledge document types (**framework**, **process**, **insight**, **principle**, **externalResource**) intentionally use **one flat `fields` list** — no `groups` on `defineType`, so the Studio is a **single scrollable page** per document. Taxonomy and attribution still come from **`sharedFields.ts`**; add them by importing the exported field objects (`confidenceField`, `phaseField`, …) and listing them in sensible order (core content first, then attribution, then taxonomy).
+Knowledge document types (**framework**, **process**, **insight**, **principle**, **externalResource**, **glossary**) intentionally use **one flat `fields` list** — no `groups` on `defineType`, so the Studio is a **single scrollable page** per document. Taxonomy and attribution still come from **`sharedFields.ts`**; add them by importing the exported field objects (`confidenceField`, `phaseField`, …) and listing them in sensible order (core content first, then attribution, then taxonomy).
 
 If you ever bring back tabs, add a `groups` array to the type and set `group` on each field (typically via `{ ...sharedField, group: 'taxonomy' }`).
 
@@ -133,20 +134,21 @@ Every document type encodes a different kind of knowledge. This is intentional �
 - **Insight** — learnings from research or experience. Has `quote` (the raw material) and `myTake` (the interpretation). `myTake` is the most valuable field — it's what makes this a knowledge base, not a bookmark list.
 - **Principle** — opinionated one-liners with `elaboration`, `goodExample`, `antiExample`, `tension`. The agent should state these with conviction, not hedging.
 - **External Resource** — annotated links. Has `whyItMatters` and `keyTakeaways`. The agent uses `whyItMatters` to decide when to surface a reference.
+- **Glossary** — acronyms and internal jargon. Has `term`, optional `expansion` (what it stands for), and `definition` (Portable Text). The agent should define the term plainly and use the team's expansion when present.
 - **Phase** — taxonomy only. Represents stages of the design process (Discovery, Definition, Delivery, etc.).
 - **Tag** — taxonomy with `category` (discipline, activity, mindset, stakeholder, quality, tool). Used for cross-cutting classification.
 - **Source Author** — reusable author records. Create once, reference everywhere.
 
 ### The shared fields contract
 
-All knowledge document types (framework, process, insight, principle, externalResource) share a common set of fields defined in `sharedFields.ts`. This is non-negotiable:
+All knowledge document types (framework, process, insight, principle, externalResource, glossary) share a common set of fields defined in `sharedFields.ts`. This is non-negotiable:
 
 - **`confidence`** — evergreen / evolving / experimental / retired. Shapes how the agent talks about the entry. Evergreen = state with conviction. Experimental = caveat clearly. Retired = flag as historical.
 - **`maturity`** — universal / onboarding / practitioner / senior. Calibrates response depth. Onboarding = give more foundational context. Senior = be concise and nuanced.
 - **`phases`** — references to Phase documents. Which stage(s) of the design process this applies to.
 - **`tags`** — references to Tag documents. Cross-cutting classification.
 - **`relatedEntries`** — weak references to other knowledge documents. This is the connective tissue of the knowledge graph. Use it generously.
-- **Attribution** — On **framework**, **process**, **insight**, and **principle**: `sourceAuthor` (reference), `sourceTitle`, `sourceUrl` from `sharedFields.ts`. On **externalResource**, the person link is the **`author`** field (same `sourceAuthor` document type); there is no separate `sourceAuthor` field name on that type.
+- **Attribution** — On **framework**, **process**, **insight**, **principle**, and **glossary**: `sourceAuthor` (reference), `sourceTitle`, `sourceUrl` from `sharedFields.ts`. On **externalResource**, the person link is the **`author`** field (same `sourceAuthor` document type); there is no separate `sourceAuthor` field name on that type.
 
 ### Adding shared fields to a new document type
 
@@ -241,7 +243,7 @@ The system prompt in `route.ts` is carefully constructed. When modifying it:
 ### What "reusable" means here
 
 - Shared fields live in `sharedFields.ts`. Period. If two document types need the same field, extract it there.
-- Attribution: **`sourceAuthor`** + **`sourceTitle`** + **`sourceUrl`** on framework, process, insight, principle. On **externalResource**, use **`author`** (reference to the same `sourceAuthor` type) — keep naming consistent with the schema, not a second pattern.
+- Attribution: **`sourceAuthor`** + **`sourceTitle`** + **`sourceUrl`** on framework, process, insight, principle, glossary. On **externalResource**, use **`author`** (reference to the same `sourceAuthor` type) — keep naming consistent with the schema, not a second pattern.
 - The `relatedEntries` field accepts weak references to all knowledge types. When adding a new type, add it to the `to` array.
 - Taxonomy (phases, tags) is reference-based, not string-based. This means renaming a phase updates everywhere automatically.
 

@@ -152,9 +152,13 @@ const KNOWLEDGE_SNIPPET_QUERY = `*[_type in $types]|order(_updatedAt desc)[0...4
   title,
   name,
   statement,
+  term,
+  expansion,
+  category,
   summary,
   quote,
   "myTake": pt::text(myTake),
+  "definition": pt::text(definition),
   implications,
   "elaboration": pt::text(elaboration),
   whyItMatters,
@@ -179,6 +183,7 @@ export async function fetchSanityFallbackContext(): Promise<KnowledgeSnippet[]> 
       'insight',
       'principle',
       'externalResource',
+      'glossary',
     ],
   })
 }
@@ -189,6 +194,7 @@ export function snippetsToContextJson(rows: KnowledgeSnippet[], maxChars = 14000
       (r.title as string) ||
       (r.name as string) ||
       (r.statement as string) ||
+      (r.term as string) ||
       (r._id as string)
     return {
       type: r._type,

@@ -17,6 +17,7 @@ export const KNOWLEDGE_TYPE_REGISTRY = [
   'insight',
   'principle',
   'externalResource',
+  'glossary',
 ] as const
 
 export type KnowledgeTypeId = (typeof KNOWLEDGE_TYPE_REGISTRY)[number]

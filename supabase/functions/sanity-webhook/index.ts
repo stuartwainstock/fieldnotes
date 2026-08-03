@@ -15,6 +15,7 @@ const KNOWLEDGE_TYPES = new Set([
   'insight',
   'principle',
   'externalResource',
+  'glossary',
 ])
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
@@ -39,12 +40,14 @@ function documentToText(doc: Record<string, unknown>): string {
     if (Array.isArray(val) && val.length) parts.push(`${label}: ${val.join('; ')}`)
   }
 
-  add('Title', doc.title ?? doc.statement ?? doc.name)
+  add('Title', doc.title ?? doc.statement ?? doc.term ?? doc.name)
   add('Type', doc._type)
   add('Summary', doc.summary)
+  add('Expansion', doc.expansion)
+  add('Category', doc.category)
 
   const bodyText = portableTextToPlain(
-    doc.body ?? doc.elaboration ?? doc.myTake,
+    doc.body ?? doc.elaboration ?? doc.myTake ?? doc.definition,
   )
   if (bodyText) parts.push(`Body: ${bodyText}`)
 
@@ -226,7 +229,7 @@ Deno.serve(async (req: Request) => {
 
     const embedding = await generateEmbedding(contentText)
     const metadata = buildMetadata(doc)
-    const title = String(doc.title ?? doc.statement ?? doc.name ?? sanityId)
+    const title = String(doc.title ?? doc.statement ?? doc.term ?? doc.name ?? sanityId)
 
     const {error: upsertError} = await supabase.from('knowledge_embeddings').upsert(
       {

@@ -47,7 +47,7 @@ export const relatedEntriesField = defineField({
   name: 'relatedEntries',
   title: 'Related entries',
   type: 'array',
-  description: 'Connect this to other frameworks, processes, insights or principles. This is the connective tissue — use it generously.',
+  description: 'Connect this to other knowledge entries. This is the connective tissue — use it generously.',
   of: [
     {
       type: 'reference',
@@ -58,6 +58,7 @@ export const relatedEntriesField = defineField({
         { type: 'insight' },
         { type: 'principle' },
         { type: 'externalResource' },
+        { type: 'glossary' },
       ],
     },
   ],

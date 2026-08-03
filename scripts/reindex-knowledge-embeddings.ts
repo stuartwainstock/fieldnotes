@@ -55,6 +55,7 @@ const KNOWLEDGE_TYPES = [
   'insight',
   'principle',
   'externalResource',
+  'glossary',
 ] as const
 
 async function main() {

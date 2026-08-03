@@ -56,7 +56,7 @@ RAG (semantic search) → GROQ (empty RAG) → GROQ (RAG error) → GROQ (no que
 
 The chat **always works** — even with Supabase entirely unconfigured, it falls back to a bounded Sanity GROQ fetch. Every path is labelled so you can see exactly how an answer was sourced.
 
-**Knowledge as a graph, not a list.** Document types (`framework`, `process`, `insight`, `principle`, `externalResource`) share a common contract — confidence, maturity, phases, tags, attribution, and weak `relatedEntries` references that wire entries together. Renaming a phase or tag updates everywhere automatically, because taxonomy is reference-based, not string-based.
+**Knowledge as a graph, not a list.** Document types (`framework`, `process`, `insight`, `principle`, `externalResource`, `glossary`) share a common contract — confidence, maturity, phases, tags, attribution, and weak `relatedEntries` references that wire entries together. Renaming a phase or tag updates everywhere automatically, because taxonomy is reference-based, not string-based.
 
 **Interpretation over bookmarks.** The most valuable fields aren't the raw material — they're the takes. An Insight's `myTake`, a Principle's `elaboration` and `tension`. A quote without interpretation is just a bookmark; the interpretation is what makes this a knowledge base.
 

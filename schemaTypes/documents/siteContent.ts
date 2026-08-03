@@ -57,7 +57,7 @@ export const siteContentDocument = defineType({
           type: 'array',
           of: [{type: 'string'}],
           description:
-            'Which knowledge document types this org uses. Leave empty to use all engine types. Values must match the engine registry (framework, process, insight, principle, externalResource — plus future types).',
+            'Which knowledge document types this org uses. Leave empty to use all engine types. Values must match the engine registry (framework, process, insight, principle, externalResource, glossary — plus future types).',
           options: {
             list: KNOWLEDGE_TYPE_REGISTRY.map((value) => ({title: value, value})),
           },

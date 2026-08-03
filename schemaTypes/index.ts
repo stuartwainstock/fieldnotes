@@ -6,6 +6,7 @@ import { processDocument } from './documents/process'
 import { insightDocument } from './documents/insight'
 import { principleDocument } from './documents/principle'
 import { externalResourceDocument } from './documents/externalResource'
+import { glossaryDocument } from './documents/glossary'
 import { siteContentDocument } from './documents/siteContent'
 import { stepObject } from './objects/step'
 
@@ -27,4 +28,5 @@ export const schemaTypes = [
   insightDocument,
   principleDocument,
   externalResourceDocument,
+  glossaryDocument,
 ]
