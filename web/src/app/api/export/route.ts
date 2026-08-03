@@ -65,6 +65,7 @@ async function structureIntoSlides(
   content: string,
   apiKey: string,
   exportRoleLine: string,
+  fallbackDeckTitle: string,
 ) {
   const client = new Anthropic({apiKey})
   const model = process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-4-6'
@@ -103,7 +104,7 @@ async function structureIntoSlides(
     throw new Error('Model returned invalid JSON for slides')
   }
 
-  return parseStructuredSlides(parsed)
+  return parseStructuredSlides(parsed, fallbackDeckTitle)
 }
 
 export async function POST(request: Request) {
@@ -127,20 +128,24 @@ export async function POST(request: Request) {
   }
 
   const content = body.content?.trim()
-  const question = body.question?.trim() ?? 'Design knowledge'
   if (!content) {
     return NextResponse.json({error: 'content is required'}, {status: 400})
   }
 
   try {
     const org = await getOrgConfig()
+    const question = body.question?.trim() || org.displayName || 'Knowledge'
     const structured = await structureIntoSlides(
       question,
       content,
       apiKey,
       org.exportRoleLine,
+      org.displayName || 'Knowledge',
     )
-    const buffer = await renderPptx(structured)
+    const buffer = await renderPptx(structured, {
+      displayName: org.displayName,
+      branding: org.branding,
+    })
     const filename = exportFilename(structured.deckTitle)
 
     return new Response(new Uint8Array(buffer), {

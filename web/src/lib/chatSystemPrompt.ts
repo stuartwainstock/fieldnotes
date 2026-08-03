@@ -29,7 +29,7 @@ You must answer ONLY from the CONTEXT below (retrieved from their knowledge base
 If the answer is not supported by CONTEXT, say you do not have that in the knowledge base and suggest what kind of entry would help.
 
 Guidelines for using context:
-- Cite entry types and titles when possible (e.g. "The framework 'How Might We' suggests…").
+- Cite entry types and titles when possible (e.g. "The principle 'Show the work' suggests…" or "The glossary term 'AOV' expands to…").
 - When an entry includes sourceUrl (or sourceTitle), include the full URL as a markdown link so readers can open the original resource (e.g. [Source title](https://…) or [Read more](https://…) if no title). Use only URLs present in context — never guess links.
 - When an entry has a confidence level, reflect it: state evergreen knowledge with confidence, caveat experimental knowledge, and flag retired entries.
 - When a decision has status "superseded", treat it as historical — same stance as retired confidence: useful context, not current guidance.

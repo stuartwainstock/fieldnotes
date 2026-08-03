@@ -50,6 +50,29 @@ Both are first-class knowledge types: embedded, GROQ-fallback eligible, and link
 - **Rule of thumb:** if a change belongs in every instance, it goes upstream in engine files. If it names a person, brand, or function unique to one org, it stays in org config / content.
 - **Full workflow:** [FORKING.md](./FORKING.md) — setup, merge cadence, conflict handling, worked example.
 
+### Engine vs org-config file boundaries
+
+**Convention:** customize config and content in a fork; leave engine files alone so `git merge upstream/main` stays cheap. Detailed path tables live in [FORKING.md](./FORKING.md) (single source of truth — don’t fork a second list).
+
+| Zone | Customize in a fork? | Examples |
+|------|----------------------|----------|
+| **Engine** | **Never** | `knowledge.ts`, Edge Functions, migrations, chat/export API routes, `chatSystemPrompt.ts`, base knowledge schemas, `sharedFields.ts` |
+| **Org config** | **Yes** | Sanity `siteContent.org` (framing, branding, enabled types, taxonomy labels) |
+| **Org content** | **Yes** | Knowledge docs, domain/tag **values**, page copy on `siteContent`, `seedDomains` / org seeds |
+| **Straddle** | Prefer config over edits | `config/org.ts` (override via Sanity), `siteContent.ts` schema shape (values in Studio), `sanity.config.ts` projectId/dataset, `web/src/lib/sanity.ts` fallbacks |
+
+**Leak rule:** new engine code must read org-specific strings from `getOrgConfig()` / `getSiteContent()`, not hardcode instance names, brand hexes, or design-team framing. If a fork needs a one-off, upstream a config hook instead of patching the engine file.
+
+**Still straddling (split when next touched):**
+
+| Path | Issue | Direction |
+|------|--------|-----------|
+| `web/src/lib/renderPptx.ts` / `exportSlides.ts` | Branding + agent label come from org config via export route | Keep passing `displayName` / `branding`; no hardcoded instance names |
+| `web/src/lib/sanity.ts` | Large design-org `SITE_CONTENT_DEFAULTS` | Keep as empty-dataset fallback for the reference instance; real copy must live in Sanity |
+| `web/src/app/opengraph-image.tsx` | Hardcoded palette + tagline | Should use `getOrgConfig()` / SEO from siteContent |
+| `scripts/seed-data.ts` | Example tags/entries are design-org flavored | Document as reference-instance seed, not universal engine content |
+| `sanity.config.ts` | Instance `projectId` / `dataset` / title | Expected fork diff — keep minimal |
+
 ## Architecture
 
 ```
@@ -337,7 +360,7 @@ The query log uses the same Supabase service role key as RAG. RLS is enabled wit
 
 - Don't hardcode knowledge in the system prompt. Everything the agent knows comes from the content in Sanity, retrieved via RAG or GROQ.
 - Don't hardcode org framing (role line, north star, brand colors, taxonomy labels) in engine files — use `config/org.ts` / `siteContent.org`.
-- Don't customize engine files in a downstream fork (retrieval, Edge Functions, base schemas) — pull those from upstream; put org-specific choices in config and content.
+- Don't customize engine files in a downstream fork (retrieval, Edge Functions, base schemas) — pull those from upstream; put org-specific choices in config and content. See [FORKING.md](./FORKING.md).
 - Don't expose `SUPABASE_SERVICE_ROLE_KEY` to the browser. Ever.
 - Don't skip the fallback chain. If you add a new retrieval method, it must degrade gracefully.
 - Don't create inline field definitions when a shared field exists. Drift between document types is a bug.

@@ -94,7 +94,7 @@ Do not let the fork drift for months: large gaps make conflicts harder and hide 
 
 ## File boundaries (engine vs org)
 
-These conventions keep pulls cheap. Ticket 09 may refine the list; treat this as the working contract.
+Canonical tables for the fork/upstream model. Summarized in [CLAUDE.md](./CLAUDE.md) → Engine vs org-config file boundaries. Keep these lists in sync when adding paths.
 
 ### Engine — never customize downstream
 
@@ -104,7 +104,9 @@ Edit these **only upstream** (or in a PR *to* upstream). In a fork, leave them a
 |------|-----|
 | `web/src/lib/knowledge.ts` | Retrieval + fallback chain |
 | `web/src/lib/chatSystemPrompt.ts` | Prompt assembly (org strings injected at runtime) |
+| `web/src/lib/orgConfig.ts` | Merge helper — no org values of its own |
 | `web/src/app/api/chat/route.ts`, `export/route.ts` | API surface |
+| `web/src/lib/exportSlides.ts`, `renderPptx.ts` | Export engine (branding passed in from org config) |
 | `web/src/components/ChatPanel.tsx` (and shared chat UI) | Product UI |
 | `supabase/functions/**` | Embed + search |
 | `supabase/migrations/**` | Shared DB shape |
@@ -119,6 +121,7 @@ Edit these **only upstream** (or in a PR *to* upstream). In a fork, leave them a
 | Sanity `siteContent` → `org` | Framing, branding, enabled types, taxonomy labels |
 | Sanity knowledge documents | The actual product |
 | Sanity domain / tag documents | Org-specific taxonomy **values** |
+| Sanity `siteContent` page/SEO/chat copy | Marketing and UI copy for this instance |
 | `scripts/seed-data.ts` → `seedDomains` (and org seed content) | Bootstrapping a new dataset |
 | Vercel / Supabase / Sanity **project** env + config | Instance isolation |
 
@@ -130,8 +133,11 @@ These are easy to customize by accident. Prefer config/content over editing them
 |------|------|--------|
 | `config/org.ts` | Defaults are shared; fork edits conflict on every upstream default tweak | Override via `siteContent.org` |
 | `schemaTypes/documents/siteContent.ts` | Schema shape is engine; field *values* are org | Change values in Studio, not the schema, unless adding a new config field for all instances (do that upstream) |
-| `web/src/lib/sanity.ts` | Contains fallback page copy strings | Put real copy in `siteContent` |
+| `web/src/lib/sanity.ts` | Contains reference-instance fallback page copy | Put real copy in `siteContent`; don’t add new design strings here |
+| `web/src/app/opengraph-image.tsx` | Easy to hardcode brand/tagline | Drive from `getOrgConfig()` / SEO fields |
+| `web/src/app/globals.css` | Default CSS brand tokens | Runtime override via org branding in `layout.tsx` |
 | `sanity.config.ts` | `projectId` / `dataset` / title | Point at the org’s project; expect occasional merge noise — keep the diff minimal |
+| `scripts/seed-data.ts` | Example tags/entries are design-org flavored | Treat as reference-instance seed; swap content per org |
 | `package.json` / lockfiles | Dependency bumps come from upstream | Merge upstream; don’t pin fork-only versions without a reason |
 
 If you must change an engine file for one org, upstream the change as a **config hook** instead of a one-off fork patch whenever possible.
@@ -199,6 +205,5 @@ git push origin main
 
 ## Related docs
 
-- [CLAUDE.md](./CLAUDE.md) — engine rules, adding document types, system prompt contract
-- Ticket 09 — deeper engine vs org-config file-boundary convention (when written)
+- [CLAUDE.md](./CLAUDE.md) — engine rules, multi-instance section, adding document types, system prompt contract
 - Phase 3 tickets — provisioning EL Sanity / Supabase / Vercel and seeding content

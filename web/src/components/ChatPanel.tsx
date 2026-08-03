@@ -125,7 +125,7 @@ export function ChatPanel({requiresAccessToken, emptyMessage, starters}: ChatPan
       if (!msg || msg.role !== 'assistant') return
 
       // Find the preceding user message as the question
-      let question = 'Design knowledge'
+      let question = 'Knowledge'
       for (let j = msgIndex - 1; j >= 0; j--) {
         if (messages[j].role === 'user' && messages[j].content.trim()) {
           question = messages[j].content.trim()

@@ -17,7 +17,10 @@ export function truncateExportContent(content: string): string {
   return `${content.slice(0, EXPORT_CONTENT_MAX_CHARS)}\n\n[Content truncated for slide export.]`
 }
 
-export function parseStructuredSlides(raw: unknown): StructuredSlides {
+export function parseStructuredSlides(
+  raw: unknown,
+  fallbackDeckTitle = 'Knowledge',
+): StructuredSlides {
   if (!raw || typeof raw !== 'object') {
     throw new Error('Invalid slide structure from model')
   }
@@ -26,7 +29,7 @@ export function parseStructuredSlides(raw: unknown): StructuredSlides {
   const deckTitle =
     typeof obj.deckTitle === 'string' && obj.deckTitle.trim()
       ? obj.deckTitle.trim()
-      : 'Design knowledge'
+      : fallbackDeckTitle
 
   const slidesRaw = Array.isArray(obj.slides) ? obj.slides : []
   const slides: SlideData[] = []
@@ -65,5 +68,5 @@ export function exportFilename(deckTitle: string): string {
     .replace(/\s+/g, '-')
     .toLowerCase()
     .slice(0, 60)
-  return `${slug || 'design-knowledge'}.pptx`
+  return `${slug || 'knowledge'}.pptx`
 }

@@ -1,15 +1,31 @@
 import PptxGenJS from 'pptxgenjs'
 import type {StructuredSlides} from '@/lib/exportSlides'
+import type {OrgBranding} from '@/lib/orgConfig'
 
-const BRAND = '2B4ACB'
-const CTA = 'FF6B35'
 const FOREGROUND = '1A1A2E'
 const MUTED = '6B6B80'
 const SUNSHINE_WASH = 'FFFCEB'
 
-export async function renderPptx(data: StructuredSlides): Promise<Buffer> {
+function hexToPptxColor(hex: string, fallback: string): string {
+  const cleaned = hex.trim().replace(/^#/, '').toUpperCase()
+  return /^[0-9A-F]{6}$/.test(cleaned) ? cleaned : fallback
+}
+
+export type RenderPptxOptions = {
+  displayName: string
+  branding: OrgBranding
+}
+
+export async function renderPptx(
+  data: StructuredSlides,
+  options: RenderPptxOptions,
+): Promise<Buffer> {
+  const brand = hexToPptxColor(options.branding.brand, '2B4ACB')
+  const cta = hexToPptxColor(options.branding.cta, 'B8470F')
+  const agentLabel = options.displayName.trim() || 'Knowledge agent'
+
   const pptx = new PptxGenJS()
-  pptx.author = 'Design Knowledge Agent'
+  pptx.author = agentLabel
   pptx.title = data.deckTitle
 
   pptx.defineLayout({name: 'WIDE', width: 13.33, height: 7.5})
@@ -22,7 +38,7 @@ export async function renderPptx(data: StructuredSlides): Promise<Buffer> {
     y: 0,
     w: 0.15,
     h: 7.5,
-    fill: {color: CTA},
+    fill: {color: cta},
   })
   titleSlide.addText(data.deckTitle, {
     x: 1.0,
@@ -34,7 +50,7 @@ export async function renderPptx(data: StructuredSlides): Promise<Buffer> {
     bold: true,
     color: FOREGROUND,
   })
-  titleSlide.addText('Design Knowledge Agent', {
+  titleSlide.addText(agentLabel, {
     x: 1.0,
     y: 4.2,
     w: 10.5,
@@ -52,7 +68,7 @@ export async function renderPptx(data: StructuredSlides): Promise<Buffer> {
       y: 0,
       w: 0.15,
       h: 7.5,
-      fill: {color: BRAND},
+      fill: {color: brand},
     })
     s.addText(slide.title, {
       x: 1.0,
@@ -107,7 +123,7 @@ export async function renderPptx(data: StructuredSlides): Promise<Buffer> {
       fontSize: 14,
       fontFace: 'Arial',
       bold: true,
-      color: CTA,
+      color: cta,
       valign: 'middle',
     })
   }
