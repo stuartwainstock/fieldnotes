@@ -27,10 +27,12 @@ function structure(S: StructureBuilder) {
 
 export default defineConfig({
   name: 'default',
-  title: 'fieldnotes',
+  title: process.env.SANITY_STUDIO_TITLE || 'fieldnotes',
 
-  projectId: 'eff153ps',
-  dataset: 'production',
+  // Instance targeting: override via env for a second dataset (e.g. Eleanor Leftwich)
+  // without forking schema code. Defaults stay the fieldnotes.design production dataset.
+  projectId: process.env.SANITY_STUDIO_PROJECT_ID || 'eff153ps',
+  dataset: process.env.SANITY_STUDIO_DATASET || 'production',
 
   plugins: [structureTool({structure}), visionTool()],
 

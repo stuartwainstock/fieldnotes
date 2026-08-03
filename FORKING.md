@@ -44,7 +44,18 @@ git remote set-url --push upstream DISABLE
 
 ### 3. Point the instance at its own infra
 
-A fork shares **code**, not **data**. Provision separate Sanity dataset / project, Supabase project, and Vercel project for the org (see Phase 3 tickets). Copy env vars from `.env.example` / `web/.env.example` and fill with the new project credentials — never reuse production fieldnotes.design secrets.
+A fork shares **code**, not **data**. Provision separate Supabase and Vercel projects for the org (see Phase 3 tickets). For Sanity, this repo uses **one project (`eff153ps`) with an isolated dataset** for Eleanor Leftwich (`eleanorleftwich`) — shared schema, separate content. Point Studio / web env at that dataset:
+
+```bash
+SANITY_STUDIO_PROJECT_ID=eff153ps
+SANITY_STUDIO_DATASET=eleanorleftwich
+SANITY_STUDIO_TITLE='Eleanor Leftwich'
+
+NEXT_PUBLIC_SANITY_PROJECT_ID=eff153ps
+NEXT_PUBLIC_SANITY_DATASET=eleanorleftwich
+```
+
+Copy remaining env vars from `.env.example` / `web/.env.example` and fill with the new Supabase/Vercel credentials — never reuse production fieldnotes.design secrets. Upgrade to a fully separate Sanity *project* later if ownership or billing needs a hard split.
 
 ### 4. Configure the org (no engine edits)
 
