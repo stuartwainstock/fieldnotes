@@ -48,7 +48,7 @@ Both are first-class knowledge types: embedded, GROQ-fallback eligible, and link
 - **Upstream:** this repo (`fieldnotes`) — engine improvements land here first.
 - **Downstream:** org forks add `upstream` and pull periodically; customize `siteContent.org`, domain/tag seeds, and Sanity content only.
 - **Rule of thumb:** if a change belongs in every instance, it goes upstream in engine files. If it names a person, brand, or function unique to one org, it stays in org config / content.
-- Full pull cadence and conflict guidance: ticket 08 → `docs/FORKING.md` (forthcoming). File-boundary conventions: ticket 09.
+- **Full workflow:** [FORKING.md](./FORKING.md) — setup, merge cadence, conflict handling, worked example.
 
 ## Architecture
 

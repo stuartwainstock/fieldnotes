@@ -77,6 +77,7 @@ The chat **always works** — even with Supabase entirely unconfigured, it falls
 ## Going deeper
 
 - **[`CLAUDE.md`](CLAUDE.md)** — the authoritative architecture and content-authoring guide. Read this before changing schemas or the pipeline.
+- **[`FORKING.md`](FORKING.md)** — how to fork for a new org, pull upstream with merge, and keep org customizations out of engine files.
 - **[`web/README.md`](web/README.md)** — running the Next.js app, environment variables, Storybook, analytics, and deploy.
 
 > The agent knows nothing that isn't authored in Sanity. There's no hardcoded knowledge in the prompt — everything it says comes from the team's content, retrieved at query time. That's the whole point.
